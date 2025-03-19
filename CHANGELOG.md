@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.9
+
+*Release Date*: 03/19/2025
+
+- Better legalization DSL
+
 ## 0.1.8
 
 *Release Date*: 06/09/2021

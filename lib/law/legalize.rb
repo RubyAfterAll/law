@@ -22,15 +22,15 @@ module Law
       judgement.try(:violations) || []
     end
 
-    def law(object = nil, petitioner = nil, permissions: nil, parameters: nil, law_class: nil)
-      object ||= @record || try(:controller_name)&.singularize&.camelize&.safe_constantize
-      petitioner ||= try(:current_user)
-      permissions ||= petitioner.try(:permissions)
-      law_class ||= object.try(:conjugate, Law::LawBase)
+    def law(target = nil, petitioner = nil, permissions: nil, parameters: nil, law_class: nil)
+      target ||= law_default_target
+      petitioner ||= law_default_petitioner
+      permissions ||= law_permissions_for(petitioner)
+      law_class ||= law_class_for(target)
 
       raise ArgumentError, "a Law is required" unless law_class.is_a?(Class)
 
-      law_class.new(permissions: permissions, source: petitioner, target: object, params: parameters)
+      law_class.new(permissions: permissions, source: petitioner, target: target, params: parameters)
     end
 
     def authorize!(action = nil, **options)
@@ -38,14 +38,40 @@ module Law
     end
 
     def authorize(action = nil, object: nil, petitioner: nil, permissions: nil, parameters: nil, law_class: nil)
-      action ||= try(:action_name)
-      parameters ||= try(:params)
+      action ||= law_default_action
+      parameters ||= law_default_params
 
       raise ArgumentError, "an action is required" if action.nil?
 
       options = { permissions: permissions, parameters: parameters, law_class: law_class }
       @judgement = law(object, petitioner, **options).authorize(action)
       authorized?
+    end
+
+    private
+
+    def law_default_target
+      @record || try(:controller_name)&.singularize&.camelize&.safe_constantize
+    end
+
+    def law_default_petitioner
+      try(:current_user)
+    end
+
+    def law_permissions_for(petitioner)
+      petitioner.try(:permissions)
+    end
+
+    def law_class_for(target)
+      target.try(:conjugate, Law::LawBase)
+    end
+
+    def law_default_action
+      try(:action_name)
+    end
+
+    def law_default_params
+      try(:params)
     end
   end
 end
